@@ -6,24 +6,27 @@
 #include <Mesh.h>
 #include <gl-matrix.h>
 
-class Cube: public Mesh
+class Cube : public Mesh
 {
 private:
-
     /** matériau */
-    Material* m_Material;
-
-    /** buffers pour la gestion du son */
-    ALuint buffer, source;
+    Material *m_Material;
 
     /** position 3D du cube */
     vec3 m_Position;
 
+    /** open face enum*/
+    enum DirectionsENUM
+    {
+        SOUTH,
+        NORTH,
+        EAST,
+        WEST,
+    };
 
 public:
-
     /** constructeur, crée le VBO et le shader */
-    Cube(std::string soundpathname);
+    Cube(const int nbFaces);
 
     /** destructeur, libère le VBO et le shader */
     ~Cube();
@@ -33,19 +36,24 @@ public:
      * @param matP : matrice de projection
      * @param matMV : matrice view*model (caméra * position objet)
      */
-    void onRender(const mat4& matP, const mat4& matMV);
+    void onRender(const mat4 &matP, const mat4 &matMV);
 
     /**
      * retourne la position % scèce du cube
      * @return vec3 position
      */
-    vec3& getPosition();
+    vec3 &getPosition();
 
     /**
      * affecte la position % scène du cube
      * @param vec3 pos position
      */
     void setPosition(vec3 pos);
+
+    bool hasNorthFace(int nbFace);
+    bool hasSouthFace(int nbFace);
+    bool hasEastFace(int nbFace);
+    bool hasWestFace(int nbFace);
 };
 
 #endif

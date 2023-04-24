@@ -11,18 +11,14 @@
 #include "Duck.h"
 #include "Ground.h"
 
-
 class Scene
 {
 private:
-
-    // objets de la scène
-    Cube* m_Cube;
-    Duck* m_Duck;
-    Ground* m_Ground;
+    // Matrice de cube
+    Cube *m_Cube[4][5];
 
     // lampes
-    Light* m_Light;
+    Light *m_Light;
 
     // matrices de transformation des objets de la scène
     mat4 m_MatP;
@@ -41,9 +37,7 @@ private:
     double m_MousePrecX;
     double m_MousePrecY;
 
-
 public:
-
     /** constructeur, crée les objets 3D à dessiner */
     Scene();
 
@@ -56,7 +50,6 @@ public:
      * @param height : hauteur en nombre de pixels de la fenêtre
      */
     void onSurfaceChanged(int width, int height);
-
 
     /**
      * appelée quand on enfonce un bouton de la souris

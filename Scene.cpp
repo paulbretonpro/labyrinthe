@@ -12,20 +12,48 @@
 
 #include "Scene.h"
 
-
 /** constructeur */
 Scene::Scene()
 {
+    int m_labyrinthe[4][5];
+
+    m_labyrinthe[0][0] = 2;
+    m_labyrinthe[0][1] = 4;
+    m_labyrinthe[0][2] = 14;
+    m_labyrinthe[0][3] = 10;
+    m_labyrinthe[0][4] = 2;
+
+    m_labyrinthe[1][0] = 7;
+    m_labyrinthe[1][1] = 8;
+    m_labyrinthe[1][2] = 3;
+    m_labyrinthe[1][3] = 5;
+    m_labyrinthe[1][4] = 9;
+
+    m_labyrinthe[2][0] = 5;
+    m_labyrinthe[2][1] = 14;
+    m_labyrinthe[2][2] = 15;
+    m_labyrinthe[2][3] = 12;
+    m_labyrinthe[2][4] = 10;
+
+    m_labyrinthe[3][0] = 4;
+    m_labyrinthe[3][1] = 9;
+    m_labyrinthe[3][2] = 5;
+    m_labyrinthe[3][3] = 8;
+    m_labyrinthe[3][4] = 1;
+
     // créer les objets à dessiner
-    m_Cube = new Cube("data/white_noise.wav");
-    m_Cube->setPosition(vec3::fromValues(0.0, -0.5, -10.0));
-    m_Duck = new Duck();
-    m_Ground = new Ground();
+    for (int row = 0; row < 4; row++)
+    {
+        for (int col = 0; col < 5; col++)
+        {
+            m_Cube[row][col] = new Cube(m_labyrinthe[row][col]);
+        }
+    }
 
     // caractéristiques de la lampe
     m_Light = new Light();
     m_Light->setColor(500.0, 500.0, 500.0);
-    m_Light->setPosition(0.0,  16.0,  13.0, 1.0);
+    m_Light->setPosition(0.0, 16.0, 13.0, 1.0);
     m_Light->setDirection(0.0, -1.0, -1.0, 0.0);
     m_Light->setAngles(30.0, 40.0);
 
@@ -43,13 +71,12 @@ Scene::Scene()
     m_MatTMP = mat4::create();
 
     // gestion vue et souris
-    m_Azimut    = 20.0;
-    m_Elevation = 20.0;
-    m_Distance  = 10.0;
-    m_Center    = vec3::create();
-    m_Clicked   = false;
+    m_Azimut = 0.0;
+    m_Elevation = 10.0;
+    m_Distance = 20.0;
+    m_Center = vec3::create();
+    m_Clicked = false;
 }
-
 
 /**
  * appelée quand la taille de la vue OpenGL change
@@ -65,7 +92,6 @@ void Scene::onSurfaceChanged(int width, int height)
     mat4::perspective(m_MatP, Utils::radians(25.0), (float)width / height, 0.1, 100.0);
 }
 
-
 /**
  * appelée quand on enfonce un bouton de la souris
  * @param btn : GLFW_MOUSE_BUTTON_LEFT pour le bouton gauche
@@ -74,12 +100,12 @@ void Scene::onSurfaceChanged(int width, int height)
  */
 void Scene::onMouseDown(int btn, double x, double y)
 {
-    if (btn != GLFW_MOUSE_BUTTON_LEFT) return;
+    if (btn != GLFW_MOUSE_BUTTON_LEFT)
+        return;
     m_Clicked = true;
     m_MousePrecX = x;
     m_MousePrecY = y;
 }
-
 
 /**
  * appelée quand on relache un bouton de la souris
@@ -92,7 +118,6 @@ void Scene::onMouseUp(int btn, double x, double y)
     m_Clicked = false;
 }
 
-
 /**
  * appelée quand on bouge la souris
  * @param x coordonnée horizontale relative à la fenêtre
@@ -100,15 +125,17 @@ void Scene::onMouseUp(int btn, double x, double y)
  */
 void Scene::onMouseMove(double x, double y)
 {
-    if (! m_Clicked) return;
-    m_Azimut  += (x - m_MousePrecX) * 0.1;
+    if (!m_Clicked)
+        return;
+    m_Azimut += (x - m_MousePrecX) * 0.1;
     m_Elevation += (y - m_MousePrecY) * 0.1;
-    if (m_Elevation >  90.0) m_Elevation =  90.0;
-    if (m_Elevation < -90.0) m_Elevation = -90.0;
+    if (m_Elevation > 90.0)
+        m_Elevation = 90.0;
+    if (m_Elevation < -90.0)
+        m_Elevation = -90.0;
     m_MousePrecX = x;
     m_MousePrecY = y;
 }
-
 
 /**
  * appelée quand on appuie sur une touche du clavier
@@ -123,7 +150,8 @@ void Scene::onKeyDown(unsigned char code)
 
     // vecteur indiquant le décalage à appliquer au pivot de la rotation
     vec3 offset = vec3::create();
-    switch (code) {
+    switch (code)
+    {
     case GLFW_KEY_W: // avant
         m_Distance *= exp(-0.01);
         break;
@@ -150,7 +178,6 @@ void Scene::onKeyDown(unsigned char code)
     vec3::add(m_Center, m_Center, offset);
 }
 
-
 /**
  * Dessine l'image courante
  */
@@ -171,39 +198,30 @@ void Scene::onDrawFrame()
     // centre des rotations
     mat4::translate(m_MatV, m_MatV, m_Center);
 
-
     /** gestion des lampes **/
 
     // calculer la position et la direction de la lampe par rapport à la scène
     m_Light->transform(m_MatV);
 
     // fournir position et direction en coordonnées caméra aux objets éclairés
-    m_Ground->setLight(m_Light);
-    m_Duck->setLight(m_Light);
-
 
     /** dessin de l'image **/
 
     // effacer l'écran
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // dessiner le sol
-    m_Ground->onDraw(m_MatP, m_MatV);
-
-    m_Cube->onRender(m_MatP, m_MatV);
-
-    // dessiner le canard en mouvement
-    mat4::rotateY(m_MatV, m_MatV, -Utils::Time * 0.8);
-    mat4::translate(m_MatV, m_MatV, vec3::fromValues(1.0, 0.0, 0.0));
-    m_Duck->onRender(m_MatP, m_MatV);
-
+    for (int row = 0; row < 4; row++)
+    {
+        for (int col = 0; col < 5; col++)
+        {
+            m_Cube[row][col]->onRender(m_MatP, m_MatV);
+            mat4::translate(m_MatV, m_MatV, vec3::fromValues(1.0, 0.0, 0.0));
+        }
+        mat4::translate(m_MatV, m_MatV, vec3::fromValues(-5.0, 0.0, 1.0));
+    }
 }
-
 
 /** supprime tous les objets de cette scène */
 Scene::~Scene()
 {
-    delete m_Cube;
-    delete m_Duck;
-    delete m_Ground;
 }
