@@ -71,9 +71,9 @@ Scene::Scene()
     m_MatTMP = mat4::create();
 
     // gestion vue et souris
-    m_Azimut = 0.0;
-    m_Elevation = 10.0;
-    m_Distance = 20.0;
+    m_Azimut = 180.0;
+    m_Elevation = 20.0;
+    m_Distance = 0.0;
     m_Center = vec3::create();
     m_Clicked = false;
 }
@@ -89,7 +89,7 @@ void Scene::onSurfaceChanged(int width, int height)
     glViewport(0, 0, width, height);
 
     // matrice de projection (champ de vision)
-    mat4::perspective(m_MatP, Utils::radians(25.0), (float)width / height, 0.1, 100.0);
+    mat4::perspective(m_MatP, Utils::radians(50.0), (float)width / height, 0.1, 100.0);
 }
 
 /**
@@ -104,7 +104,7 @@ void Scene::onMouseDown(int btn, double x, double y)
         return;
     m_Clicked = true;
     m_MousePrecX = x;
-    m_MousePrecY = y;
+    // m_MousePrecY = y;
 }
 
 /**
@@ -128,13 +128,13 @@ void Scene::onMouseMove(double x, double y)
     if (!m_Clicked)
         return;
     m_Azimut += (x - m_MousePrecX) * 0.1;
-    m_Elevation += (y - m_MousePrecY) * 0.1;
+    // m_Elevation += (y - m_MousePrecY) * 0.1;
     if (m_Elevation > 90.0)
         m_Elevation = 90.0;
     if (m_Elevation < -90.0)
         m_Elevation = -90.0;
     m_MousePrecX = x;
-    m_MousePrecY = y;
+    // m_MousePrecY = y;
 }
 
 /**

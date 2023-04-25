@@ -61,8 +61,6 @@ Cube::Cube(const int nbFace) : Mesh("cube")
     m_Material = new MaterialCube();
     setMaterials(m_Material);
 
-    std::cout << "nbFace " << nbFace << std::endl;
-
     // maillage
     const float b = 0.5;
 
@@ -96,10 +94,6 @@ Cube::Cube(const int nbFace) : Mesh("cube")
     addQuad(P4, P5, P6, P7);
     if (nbFace < 15)
     {
-        // std::cout << "nbFace " << hasOpenEastFace(nbFace) << std::endl;
-        //  quads
-        //  top
-        //  addQuad(P1, P0, P3, P2);
 
         // FACE EAST
         if (hasEastFace(nbFace))
@@ -160,7 +154,6 @@ bool Cube::hasWestFace(int nbFace)
 void Cube::onRender(const mat4 &matP, const mat4 &matVM)
 {
     /** dessin OpenGL **/
-
     onDraw(matP, matVM);
 
     /** sonorisation OpenAL **/
