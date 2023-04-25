@@ -150,26 +150,29 @@ void Scene::onKeyDown(unsigned char code)
 
     // vecteur indiquant le décalage à appliquer au pivot de la rotation
     vec3 offset = vec3::create();
+    std::cout << "code: " << code << std::endl;
     switch (code)
     {
     case GLFW_KEY_W: // avant
-        m_Distance *= exp(-0.01);
+        std::cout << "action: AVANT" << std::endl;
+        m_Distance *= exp(-0.50);
         break;
     case GLFW_KEY_S: // arrière
         m_Distance *= exp(+0.01);
         break;
-    case GLFW_KEY_A: // droite
-        vec3::transformMat4(offset, vec3::fromValues(+0.1, 0, 0), m_MatTMP);
-        break;
-    case GLFW_KEY_D: // gauche
+    case GLFW_KEY_D: // droite
         vec3::transformMat4(offset, vec3::fromValues(-0.1, 0, 0), m_MatTMP);
         break;
-    case GLFW_KEY_Q: // haut
-        vec3::transformMat4(offset, vec3::fromValues(0, -0.1, 0), m_MatTMP);
+    case GLFW_KEY_A: // gauche
+        vec3::transformMat4(offset, vec3::fromValues(+0.1, 0, 0), m_MatTMP);
         break;
-    case GLFW_KEY_Z: // bas
-        vec3::transformMat4(offset, vec3::fromValues(0, +0.1, 0), m_MatTMP);
-        break;
+        /* case GLFW_KEY_Q: // haut
+            vec3::transformMat4(offset, vec3::fromValues(0, -0.1, 0), m_MatTMP);
+            break;
+        case GLFW_KEY_Z: // bas
+            vec3::transformMat4(offset, vec3::fromValues(0, +0.1, 0), m_MatTMP);
+            break;
+            */
     default:
         return;
     }

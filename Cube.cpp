@@ -94,7 +94,6 @@ Cube::Cube(const int nbFace) : Mesh("cube")
     addQuad(P4, P5, P6, P7);
     if (nbFace < 15)
     {
-
         // FACE EAST
         if (hasEastFace(nbFace))
             addQuad(P5, P4, P0, P1);
