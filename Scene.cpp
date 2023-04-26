@@ -72,7 +72,7 @@ Scene::Scene()
 
     // gestion vue et souris
     m_Azimut = 180.0;
-    m_Elevation = 20.0;
+    m_Elevation = 0.0;
     m_Distance = 0.0;
     m_Center = vec3::create();
     m_Clicked = false;
@@ -89,7 +89,7 @@ void Scene::onSurfaceChanged(int width, int height)
     glViewport(0, 0, width, height);
 
     // matrice de projection (champ de vision)
-    mat4::perspective(m_MatP, Utils::radians(50.0), (float)width / height, 0.1, 100.0);
+    mat4::perspective(m_MatP, Utils::radians(80.0), (float)width / height, 0.1, 100.0);
 }
 
 /**
@@ -154,12 +154,12 @@ void Scene::onKeyDown(unsigned char code)
     switch (code)
     {
     case GLFW_KEY_W: // avant
-        std::cout << "action: AVANT" << std::endl;
-        m_Distance *= exp(-0.50);
+        vec3::transformMat4(offset, vec3::fromValues(0, 0, +1), m_MatTMP);
         break;
-    case GLFW_KEY_S: // arrière
+    /* case GLFW_KEY_S: // arrière
         m_Distance *= exp(+0.01);
         break;
+    */
     case GLFW_KEY_D: // droite
         vec3::transformMat4(offset, vec3::fromValues(-0.1, 0, 0), m_MatTMP);
         break;
@@ -176,7 +176,7 @@ void Scene::onKeyDown(unsigned char code)
     default:
         return;
     }
-
+;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
     // appliquer le décalage au centre de la rotation
     vec3::add(m_Center, m_Center, offset);
 }
