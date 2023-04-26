@@ -16,6 +16,11 @@ class Scene
 private:
     // Matrice de cube
     Cube *m_Cube[4][5];
+    int m_labyrinthe[4][5];
+
+    // Position in Maze and orientation N S E W
+    int position[2];
+    int direction;
 
     // lampes
     Light *m_Light;
@@ -36,6 +41,11 @@ private:
     bool m_Clicked;
     double m_MousePrecX;
     double m_MousePrecY;
+
+    // MOVE
+    void rotateLeft();
+    void rotateRight();
+    bool canMove();
 
 public:
     /** constructeur, crée les objets 3D à dessiner */

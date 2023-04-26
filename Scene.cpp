@@ -15,8 +15,12 @@
 /** constructeur */
 Scene::Scene()
 {
-    int m_labyrinthe[4][5];
+    // INIT position in maze
+    this->position[0] = 0;
+    this->position[1] = 0;
+    this->direction = 2;
 
+    // INIT Maze
     m_labyrinthe[0][0] = 2;
     m_labyrinthe[0][1] = 4;
     m_labyrinthe[0][2] = 14;
@@ -41,7 +45,7 @@ Scene::Scene()
     m_labyrinthe[3][3] = 8;
     m_labyrinthe[3][4] = 1;
 
-    // créer les objets à dessiner
+    // CREATE cube with maze
     for (int row = 0; row < 4; row++)
     {
         for (int col = 0; col < 5; col++)
@@ -104,7 +108,6 @@ void Scene::onMouseDown(int btn, double x, double y)
         return;
     m_Clicked = true;
     m_MousePrecX = x;
-    // m_MousePrecY = y;
 }
 
 /**
@@ -128,13 +131,11 @@ void Scene::onMouseMove(double x, double y)
     if (!m_Clicked)
         return;
     m_Azimut += (x - m_MousePrecX) * 0.1;
-    // m_Elevation += (y - m_MousePrecY) * 0.1;
     if (m_Elevation > 90.0)
         m_Elevation = 90.0;
     if (m_Elevation < -90.0)
         m_Elevation = -90.0;
     m_MousePrecX = x;
-    // m_MousePrecY = y;
 }
 
 /**
@@ -150,33 +151,28 @@ void Scene::onKeyDown(unsigned char code)
 
     // vecteur indiquant le décalage à appliquer au pivot de la rotation
     vec3 offset = vec3::create();
-    std::cout << "code: " << code << std::endl;
+
     switch (code)
     {
     case GLFW_KEY_W: // avant
-        vec3::transformMat4(offset, vec3::fromValues(0, 0, +1), m_MatTMP);
+        if (this->canMove() == true)
+        {
+            vec3::transformMat4(offset, vec3::fromValues(0, 0, +1), m_MatTMP);
+        }
+        else
+        {
+            std::cout << "PAS POSSIBLE" << std::endl;
+        }
         break;
-    /* case GLFW_KEY_S: // arrière
-        m_Distance *= exp(+0.01);
+    case GLFW_KEY_D: // rotation à droite
+        m_Azimut += 90;
+        rotateRight();
         break;
-    */
-    case GLFW_KEY_D: // droite
-        vec3::transformMat4(offset, vec3::fromValues(-0.1, 0, 0), m_MatTMP);
+    case GLFW_KEY_A: // rotation à gauche
+        m_Azimut -= 90;
+        rotateLeft();
         break;
-    case GLFW_KEY_A: // gauche
-        vec3::transformMat4(offset, vec3::fromValues(+0.1, 0, 0), m_MatTMP);
-        break;
-        /* case GLFW_KEY_Q: // haut
-            vec3::transformMat4(offset, vec3::fromValues(0, -0.1, 0), m_MatTMP);
-            break;
-        case GLFW_KEY_Z: // bas
-            vec3::transformMat4(offset, vec3::fromValues(0, +0.1, 0), m_MatTMP);
-            break;
-            */
-    default:
-        return;
-    }
-;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+    };
     // appliquer le décalage au centre de la rotation
     vec3::add(m_Center, m_Center, offset);
 }
@@ -222,6 +218,80 @@ void Scene::onDrawFrame()
         }
         mat4::translate(m_MatV, m_MatV, vec3::fromValues(-5.0, 0.0, 1.0));
     }
+}
+
+void Scene::rotateLeft()
+{
+    switch (this->direction)
+    {
+    case 1:
+        this->direction = 8;
+        break;
+    case 2:
+        this->direction = 4;
+        break;
+    case 4:
+        this->direction = 1;
+        break;
+    case 8:
+        this->direction = 2;
+        break;
+
+    default:
+        break;
+    }
+}
+
+void Scene::rotateRight()
+{
+    switch (this->direction)
+    {
+    case 1:
+        this->direction = 4;
+        break;
+    case 2:
+        this->direction = 8;
+        break;
+    case 4:
+        this->direction = 2;
+        break;
+    case 8:
+        this->direction = 1;
+        break;
+
+    default:
+        break;
+    }
+}
+
+bool Scene::canMove()
+{
+    int x = this->position[0];
+    int y = this->position[1];
+
+    int mazeValue = this->m_labyrinthe[x][y];
+
+    if (this->direction == 1 && (mazeValue == 1 || mazeValue == 3 || mazeValue == 5 || mazeValue == 7 || mazeValue == 9 || mazeValue == 11 || mazeValue == 13 || mazeValue == 15))
+    {
+        this->position[0] = x - 1;
+        return true;
+    }
+    if (this->direction == 2 && (mazeValue == 2 || mazeValue == 3 || mazeValue == 6 || mazeValue == 7 || mazeValue == 10 || mazeValue == 11 || mazeValue == 14 || mazeValue == 15))
+    {
+        this->position[0] = x + 1;
+        return true;
+    }
+    if (this->direction == 4 && (mazeValue == 4 || mazeValue == 5 || mazeValue == 6 || mazeValue == 7 || mazeValue == 12 || mazeValue == 13 || mazeValue == 14 || mazeValue == 15))
+    {
+        this->position[1] = y + 1;
+        return true;
+    }
+    if (this->direction == 8 && (mazeValue == 8 || mazeValue == 9 || mazeValue == 10 || mazeValue == 11 || mazeValue == 12 || mazeValue == 13 || mazeValue == 14 || mazeValue == 15))
+    {
+        this->position[1] = y - 1;
+        return true;
+    }
+    return false;
 }
 
 /** supprime tous les objets de cette scène */
