@@ -105,6 +105,8 @@ void error_callback(int error, const char* description)
 /** point d'entrée du programme **/
 int main(int argc,char **argv)
 {
+    const std::string maze_file = argc > 1 ? argv[1] : "maze/maze.num";
+
     // initialisation de GLFW
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
@@ -147,8 +149,8 @@ int main(int argc,char **argv)
     alListener3f(AL_VELOCITY, 0, 0, 0);
 
     // création de la scène => création des objets...
-    scene = new Scene();
-    //debugGLFatal("new Scene()");
+    scene = new Scene(maze_file);
+    //debugGLFatal("new Scene(maze_file)");
 
     // enregistrement des fonctions callbacks
     glfwSetFramebufferSizeCallback(window, onSurfaceChanged);

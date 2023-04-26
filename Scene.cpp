@@ -11,42 +11,20 @@
 #include <utils.h>
 
 #include "Scene.h"
+#include "maze/Maze.h"
 
 /** constructeur */
-Scene::Scene()
+Scene::Scene(const std::string& filename)
 {
-    int m_labyrinthe[4][5];
-
-    m_labyrinthe[0][0] = 2;
-    m_labyrinthe[0][1] = 4;
-    m_labyrinthe[0][2] = 14;
-    m_labyrinthe[0][3] = 10;
-    m_labyrinthe[0][4] = 2;
-
-    m_labyrinthe[1][0] = 7;
-    m_labyrinthe[1][1] = 8;
-    m_labyrinthe[1][2] = 3;
-    m_labyrinthe[1][3] = 5;
-    m_labyrinthe[1][4] = 9;
-
-    m_labyrinthe[2][0] = 5;
-    m_labyrinthe[2][1] = 14;
-    m_labyrinthe[2][2] = 15;
-    m_labyrinthe[2][3] = 12;
-    m_labyrinthe[2][4] = 10;
-
-    m_labyrinthe[3][0] = 4;
-    m_labyrinthe[3][1] = 9;
-    m_labyrinthe[3][2] = 5;
-    m_labyrinthe[3][3] = 8;
-    m_labyrinthe[3][4] = 1;
+    Maze maze = Maze::import_from_file(filename);
+    std::vector<std::vector<Cube*>> m_Cube;
 
     // créer les objets à dessiner
     for (int row = 0; row < 4; row++)
     {
         for (int col = 0; col < 5; col++)
         {
-            m_Cube[row][col] = new Cube(m_labyrinthe[row][col]);
+            m_Cube[row][col] = new Cube(maze[row][col]);
         }
     }
 

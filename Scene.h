@@ -15,7 +15,7 @@ class Scene
 {
 private:
     // Matrice de cube
-    Cube *m_Cube[4][5];
+    std::vector<std::vector<Cube>> *m_Cube;
 
     // lampes
     Light *m_Light;
@@ -39,7 +39,7 @@ private:
 
 public:
     /** constructeur, crée les objets 3D à dessiner */
-    Scene();
+    Scene(const std::string& filename);
 
     /** destructeur, libère les ressources */
     ~Scene();
