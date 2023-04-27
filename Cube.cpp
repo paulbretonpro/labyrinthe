@@ -14,8 +14,8 @@
 
 #include <utils.h>
 
-#include <Cube.h>
-#include <Material.h>
+#include "Material.h"
+#include "Cube.h"
 
 using namespace mesh;
 

@@ -10,19 +10,10 @@ class Cube : public Mesh
 {
 private:
     /** matériau */
-    Material *m_Material;
+    Material* m_Material;
 
     /** position 3D du cube */
     vec3 m_Position;
-
-    /** open face enum*/
-    enum DirectionsENUM
-    {
-        SOUTH,
-        NORTH,
-        EAST,
-        WEST,
-    };
 
 public:
     /** constructeur, crée le VBO et le shader */

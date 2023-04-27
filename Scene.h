@@ -8,22 +8,22 @@
 #include "Light.h"
 
 #include "Cube.h"
-#include "Duck.h"
 #include "Ground.h"
 
 class Scene
 {
 private:
     // Matrice de cube
-    Cube *m_Cube[4][5];
+    Cube* m_Cube[4][5];
     int m_labyrinthe[4][5];
+    ALuint m_Source[4];
 
     // Position in Maze and orientation N S E W
     int position[2];
     int direction;
 
     // lampes
-    Light *m_Light;
+    Light* m_Light;
 
     // matrices de transformation des objets de la scène
     mat4 m_MatP;

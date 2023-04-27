@@ -12,13 +12,19 @@
 
 #include "Scene.h"
 
+/** Directions constants */
+const int NORTH = 1;
+const int SOUTH = 2;
+const int EAST = 4;
+const int WEST = 8;
+
 /** constructeur */
 Scene::Scene()
 {
     // INIT position in maze
     this->position[0] = 0;
     this->position[1] = 0;
-    this->direction = 2;
+    this->direction = SOUTH;
 
     // INIT Maze
     m_labyrinthe[0][0] = 2;
@@ -62,7 +68,7 @@ Scene::Scene()
     m_Light->setAngles(30.0, 40.0);
 
     // couleur du fond : gris foncé
-    glClearColor(0.4, 0.4, 0.4, 0.0);
+    glClearColor(0.333, 0.333, 0.333, 0.0);
 
     // activer le depth buffer
     glEnable(GL_DEPTH_TEST);
@@ -80,6 +86,45 @@ Scene::Scene()
     m_Distance = 0.0;
     m_Center = vec3::create();
     m_Clicked = false;
+
+    // ouverture du flux audio à placer dans le buffer
+    ALuint buffer = alutCreateBufferFromFile("data/Aaah.wav");
+    if (buffer == AL_NONE) {
+        std::cerr << "unable to open sound file " << std::endl;
+        alGetError();
+        throw std::runtime_error("file not found or not readable");
+    }
+
+    // lien buffer -> sources
+    alGenSources(4, m_Source);
+
+    for (int i = 0; i < 4; i++)
+    {
+        alSourcei(m_Source[i], AL_BUFFER, buffer);
+
+        // propriétés de la source à l'origine
+        alSource3f(m_Source[i], AL_VELOCITY, 0, 0, 0);
+        alSourcei(m_Source[i], AL_LOOPING, AL_FALSE);
+
+        // dans un cone d'angle [-inner/2, inner/2] il n'y a pas d'attenuation
+        alSourcef(m_Source[i], AL_CONE_INNER_ANGLE, 20);
+
+        // dans un cone d'angle [-outer/2, outer/2] il y a une attenuation linéaire entre 0 et le gain
+        alSourcef(m_Source[i], AL_CONE_OUTER_GAIN, 0);
+
+        // à l'extérieur de [-outer/2, outer/2] il y a une attenuation totale
+        alSourcef(m_Source[i], AL_CONE_OUTER_ANGLE, 80);
+    }
+
+    // on positionne les sources autour du joueur (0, 0, 0) par défaut
+    // au nord
+    alSource3f(m_Source[0], AL_POSITION, 0, -1, 0);
+    // au sud
+    alSource3f(m_Source[1], AL_POSITION, 0, 1, 0);
+    // à l'est
+    alSource3f(m_Source[2], AL_POSITION, 1, 0, 0);
+    // à l'ouest
+    alSource3f(m_Source[3], AL_POSITION, -1, 0, 0);
 }
 
 /**
@@ -151,28 +196,117 @@ void Scene::onKeyDown(unsigned char code)
 
     // vecteur indiquant le décalage à appliquer au pivot de la rotation
     vec3 offset = vec3::create();
+    int cellValue;
 
     switch (code)
     {
-    case GLFW_KEY_W: // avant
-        if (this->canMove() == true)
-        {
-            vec3::transformMat4(offset, vec3::fromValues(0, 0, +1), m_MatTMP);
-        }
-        else
-        {
-            std::cout << "PAS POSSIBLE" << std::endl;
-        }
-        break;
-    case GLFW_KEY_D: // rotation à droite
-        m_Azimut += 90;
-        rotateRight();
-        break;
-    case GLFW_KEY_A: // rotation à gauche
-        m_Azimut -= 90;
-        rotateLeft();
-        break;
-    };
+        case GLFW_KEY_W: // avant
+            if (this->canMove() == true)
+            {
+                vec3::transformMat4(offset, vec3::fromValues(0, 0, 1), m_MatTMP);
+
+                // obtenir la direction relative à la caméra
+                vec4 dir = vec4::fromValues(0, 0, 1, 0);
+                vec4::transformMat4(dir, dir, m_MatVM);
+
+                // on repositionne les sources autour du joueur
+                for (int i = 0; i < 4; i++)
+                {
+                    float x, y, z;
+                    alGetSource3f(m_Source[i], AL_POSITION, &x, &y, &z);
+
+                    switch(direction)
+                    {
+                        case NORTH:
+                            alSource3f(m_Source[i], AL_POSITION, x, y - 1, z);
+                            alSource3f(m_Source[i], AL_DIRECTION, dir[0], dir[1], dir[2]);
+                            break;
+                        case SOUTH:
+                            alSource3f(m_Source[i], AL_POSITION, x, y + 1, z);
+                            alSource3f(m_Source[i], AL_DIRECTION, dir[0], dir[1], dir[2]);
+                            break;
+                        case EAST:
+                            alSource3f(m_Source[i], AL_POSITION, x + 1, y, z);
+                            alSource3f(m_Source[i], AL_DIRECTION, dir[0], dir[1], dir[2]);
+                            break;
+                        case WEST:
+                            alSource3f(m_Source[i], AL_POSITION, x - 1, y, z);
+                            alSource3f(m_Source[i], AL_DIRECTION, dir[0], dir[1], dir[2]);
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                std::cout << "PAS POSSIBLE" << std::endl;
+            }
+            break;
+
+        case GLFW_KEY_D: // rotation à droite
+            m_Azimut += 90;
+            rotateRight();
+            break;
+
+        case GLFW_KEY_A: // rotation à gauche
+            m_Azimut -= 90;
+            rotateLeft();
+            break;
+
+        case GLFW_KEY_J: // son des 3 directions à la fois
+            cellValue = m_labyrinthe[position[1]][position[0]];
+
+            switch(direction)
+            {
+                case NORTH:
+                    if ((cellValue & NORTH) == 0)
+                    {
+                        alSourcePlay(m_Source[0]);
+                    }
+                    else
+                    {
+                        std::cout << "no wall at north" << std::endl;
+                    }
+                    break;
+
+                case SOUTH:
+                    if ((cellValue & SOUTH) == 0)
+                    {
+                        alSourcePlay(m_Source[1]);
+                    }
+                    else
+                    {
+                        std::cout << "no wall at south" << std::endl;
+                    }
+                    break;
+
+                case EAST:
+                    if ((cellValue & EAST) == 0)
+                    {
+                        alSourcePlay(m_Source[2]);
+                    }
+                    else
+                    {
+                        std::cout << "no wall at east" << std::endl;
+                    }
+                    break;
+
+                case WEST:
+                    if ((cellValue & WEST) == 0)
+                    {
+                        alSourcePlay(m_Source[3]);
+                    }
+                    else
+                    {
+                        std::cout << "no wall at west" << std::endl;
+                    }
+                    break;
+            }
+            break;
+
+        default:
+            return;
+    }
+
     // appliquer le décalage au centre de la rotation
     vec3::add(m_Center, m_Center, offset);
 }
@@ -224,17 +358,17 @@ void Scene::rotateLeft()
 {
     switch (this->direction)
     {
-    case 1:
-        this->direction = 8;
+    case NORTH:
+        direction = WEST;
         break;
-    case 2:
-        this->direction = 4;
+    case SOUTH:
+        direction = EAST;
         break;
-    case 4:
-        this->direction = 1;
+    case EAST:
+        direction = NORTH;
         break;
-    case 8:
-        this->direction = 2;
+    case WEST:
+        direction = SOUTH;
         break;
 
     default:
@@ -244,19 +378,19 @@ void Scene::rotateLeft()
 
 void Scene::rotateRight()
 {
-    switch (this->direction)
+    switch (direction)
     {
-    case 1:
-        this->direction = 4;
+    case NORTH:
+        direction = EAST;
         break;
-    case 2:
-        this->direction = 8;
+    case SOUTH:
+        direction = WEST;
         break;
-    case 4:
-        this->direction = 2;
+    case EAST:
+        direction = SOUTH;
         break;
-    case 8:
-        this->direction = 1;
+    case WEST:
+        direction = NORTH;
         break;
 
     default:
@@ -271,22 +405,22 @@ bool Scene::canMove()
 
     int mazeValue = this->m_labyrinthe[x][y];
 
-    if (this->direction == 1 && (mazeValue == 1 || mazeValue == 3 || mazeValue == 5 || mazeValue == 7 || mazeValue == 9 || mazeValue == 11 || mazeValue == 13 || mazeValue == 15))
+    if (this->direction == NORTH && (mazeValue == 1 || mazeValue == 3 || mazeValue == 5 || mazeValue == 7 || mazeValue == 9 || mazeValue == 11 || mazeValue == 13 || mazeValue == 15))
     {
         this->position[0] = x - 1;
         return true;
     }
-    if (this->direction == 2 && (mazeValue == 2 || mazeValue == 3 || mazeValue == 6 || mazeValue == 7 || mazeValue == 10 || mazeValue == 11 || mazeValue == 14 || mazeValue == 15))
+    if (this->direction == SOUTH && (mazeValue == 2 || mazeValue == 3 || mazeValue == 6 || mazeValue == 7 || mazeValue == 10 || mazeValue == 11 || mazeValue == 14 || mazeValue == 15))
     {
         this->position[0] = x + 1;
         return true;
     }
-    if (this->direction == 4 && (mazeValue == 4 || mazeValue == 5 || mazeValue == 6 || mazeValue == 7 || mazeValue == 12 || mazeValue == 13 || mazeValue == 14 || mazeValue == 15))
+    if (this->direction == EAST && (mazeValue == 4 || mazeValue == 5 || mazeValue == 6 || mazeValue == 7 || mazeValue == 12 || mazeValue == 13 || mazeValue == 14 || mazeValue == 15))
     {
         this->position[1] = y + 1;
         return true;
     }
-    if (this->direction == 8 && (mazeValue == 8 || mazeValue == 9 || mazeValue == 10 || mazeValue == 11 || mazeValue == 12 || mazeValue == 13 || mazeValue == 14 || mazeValue == 15))
+    if (this->direction == WEST && (mazeValue == 8 || mazeValue == 9 || mazeValue == 10 || mazeValue == 11 || mazeValue == 12 || mazeValue == 13 || mazeValue == 14 || mazeValue == 15))
     {
         this->position[1] = y - 1;
         return true;
