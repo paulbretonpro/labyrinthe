@@ -90,6 +90,10 @@ public:
      */
     void onKeyDown(unsigned char code);
 
+    void playSoundLeft();
+    void playSoundFront();
+    void playSoundRight();
+
     /** Dessine l'image courante */
     void onDrawFrame();
 };

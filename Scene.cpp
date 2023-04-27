@@ -18,6 +18,11 @@ const int SOUTH = 2;
 const int EAST = 4;
 const int WEST = 8;
 
+const int SOURCE_NORTH = 0;
+const int SOURCE_SOUTH = 1;
+const int SOURCE_EAST = 2;
+const int SOURCE_WEST = 3;
+
 /** constructeur */
 Scene::Scene()
 {
@@ -106,6 +111,9 @@ Scene::Scene()
         alSource3f(m_Source[i], AL_VELOCITY, 0, 0, 0);
         alSourcei(m_Source[i], AL_LOOPING, AL_FALSE);
 
+        // diminue le gain du son
+        alSourcef(m_Source[i], AL_GAIN, 0.5f);
+
         // dans un cone d'angle [-inner/2, inner/2] il n'y a pas d'attenuation
         alSourcef(m_Source[i], AL_CONE_INNER_ANGLE, 20);
 
@@ -117,14 +125,10 @@ Scene::Scene()
     }
 
     // on positionne les sources autour du joueur (0, 0, 0) par défaut
-    // au nord
-    alSource3f(m_Source[0], AL_POSITION, 0, -1, 0);
-    // au sud
-    alSource3f(m_Source[1], AL_POSITION, 0, 1, 0);
-    // à l'est
-    alSource3f(m_Source[2], AL_POSITION, 1, 0, 0);
-    // à l'ouest
-    alSource3f(m_Source[3], AL_POSITION, -1, 0, 0);
+    alSource3f(m_Source[SOURCE_NORTH], AL_POSITION, 0.5, 0, 0);
+    alSource3f(m_Source[SOURCE_SOUTH], AL_POSITION, 0.5, 1, 0);
+    alSource3f(m_Source[SOURCE_EAST], AL_POSITION, 1, 0.5, 0);
+    alSource3f(m_Source[SOURCE_WEST], AL_POSITION, 0, 0.5, 0);
 }
 
 /**
@@ -196,7 +200,6 @@ void Scene::onKeyDown(unsigned char code)
 
     // vecteur indiquant le décalage à appliquer au pivot de la rotation
     vec3 offset = vec3::create();
-    int cellValue;
 
     switch (code)
     {
@@ -252,55 +255,22 @@ void Scene::onKeyDown(unsigned char code)
             rotateLeft();
             break;
 
+        case GLFW_KEY_H: // son à gauche
+            playSoundLeft();
+            break;
+
+        case GLFW_KEY_U: // son devant
+            playSoundFront();
+            break;
+
+        case GLFW_KEY_K: // son à droite
+            playSoundRight();
+            break;
+
         case GLFW_KEY_J: // son des 3 directions à la fois
-            cellValue = m_labyrinthe[position[1]][position[0]];
-
-            switch(direction)
-            {
-                case NORTH:
-                    if ((cellValue & NORTH) == 0)
-                    {
-                        alSourcePlay(m_Source[0]);
-                    }
-                    else
-                    {
-                        std::cout << "no wall at north" << std::endl;
-                    }
-                    break;
-
-                case SOUTH:
-                    if ((cellValue & SOUTH) == 0)
-                    {
-                        alSourcePlay(m_Source[1]);
-                    }
-                    else
-                    {
-                        std::cout << "no wall at south" << std::endl;
-                    }
-                    break;
-
-                case EAST:
-                    if ((cellValue & EAST) == 0)
-                    {
-                        alSourcePlay(m_Source[2]);
-                    }
-                    else
-                    {
-                        std::cout << "no wall at east" << std::endl;
-                    }
-                    break;
-
-                case WEST:
-                    if ((cellValue & WEST) == 0)
-                    {
-                        alSourcePlay(m_Source[3]);
-                    }
-                    else
-                    {
-                        std::cout << "no wall at west" << std::endl;
-                    }
-                    break;
-            }
+            playSoundLeft();
+            playSoundFront();
+            playSoundRight();
             break;
 
         default:
@@ -309,6 +279,114 @@ void Scene::onKeyDown(unsigned char code)
 
     // appliquer le décalage au centre de la rotation
     vec3::add(m_Center, m_Center, offset);
+}
+
+void Scene::playSoundLeft()
+{
+    int cellValue = m_labyrinthe[position[0]][position[1]];
+
+    switch(direction)
+    {
+        case NORTH:
+            if ((cellValue & WEST) == 0)
+            {
+                alSourcePlay(m_Source[SOURCE_WEST]);
+            }
+            break;
+
+        case SOUTH:
+            if ((cellValue & EAST) == 0)
+            {
+                alSourcePlay(m_Source[SOURCE_EAST]);
+            }
+            break;
+
+        case EAST:
+            if ((cellValue & NORTH) == 0)
+            {
+                alSourcePlay(m_Source[SOURCE_NORTH]);
+            }
+            break;
+
+        case WEST:
+            if ((cellValue & SOUTH) == 0)
+            {
+                alSourcePlay(m_Source[SOURCE_SOUTH]);
+            }
+            break;
+    }
+}
+
+void Scene::playSoundFront()
+{
+    int cellValue = m_labyrinthe[position[0]][position[1]];
+
+    switch(direction)
+    {
+        case NORTH:
+            if ((cellValue & NORTH) == 0)
+            {
+                alSourcePlay(m_Source[SOURCE_NORTH]);
+            }
+            break;
+
+        case SOUTH:
+            if ((cellValue & SOUTH) == 0)
+            {
+                alSourcePlay(m_Source[SOURCE_SOUTH]);
+            }
+            break;
+
+        case EAST:
+            if ((cellValue & EAST) == 0)
+            {
+                alSourcePlay(m_Source[SOURCE_EAST]);
+            }
+            break;
+
+        case WEST:
+            if ((cellValue & WEST) == 0)
+            {
+                alSourcePlay(m_Source[SOURCE_WEST]);
+            }
+            break;
+    }
+}
+
+void Scene::playSoundRight()
+{
+    int cellValue = m_labyrinthe[position[0]][position[1]];
+
+    switch(direction)
+    {
+        case NORTH:
+            if ((cellValue & EAST) == 0)
+            {
+                alSourcePlay(m_Source[SOURCE_EAST]);
+            }
+            break;
+
+        case SOUTH:
+            if ((cellValue & WEST) == 0)
+            {
+                alSourcePlay(m_Source[SOURCE_WEST]);
+            }
+            break;
+
+        case EAST:
+            if ((cellValue & SOUTH) == 0)
+            {
+                alSourcePlay(m_Source[SOURCE_SOUTH]);
+            }
+            break;
+
+        case WEST:
+            if ((cellValue & NORTH) == 0)
+            {
+                alSourcePlay(m_Source[SOURCE_NORTH]);
+            }
+            break;
+    }
 }
 
 /**
