@@ -15,6 +15,14 @@
 /** constructeur */
 Scene::Scene()
 {
+
+    alutInit(0, NULL);
+
+    bufferWalk = alutCreateBufferFromFile("data/walk.wav");
+    bufferWall = alutCreateBufferFromFile("data/wall.wav");
+
+    alGenSources(1, &source);
+
     // INIT position in maze
     this->position[0] = 0;
     this->position[1] = 0;
@@ -157,10 +165,14 @@ void Scene::onKeyDown(unsigned char code)
     case GLFW_KEY_W: // avant
         if (this->canMove() == true)
         {
+            alSourcei(source, AL_BUFFER, bufferWalk);
+            alSourcePlay(source);
             vec3::transformMat4(offset, vec3::fromValues(0, 0, +1), m_MatTMP);
         }
         else
         {
+            alSourcei(source, AL_BUFFER, bufferWall);
+            alSourcePlay(source);
             std::cout << "PAS POSSIBLE" << std::endl;
         }
         break;
