@@ -22,6 +22,9 @@ private:
     int position[2];
     int direction;
 
+    // Sound
+    ALuint source, bufferWalk, bufferWall;
+
     // lampes
     Light *m_Light;
 
