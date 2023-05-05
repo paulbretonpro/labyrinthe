@@ -17,6 +17,7 @@ private:
     Cube* m_Cube[4][5];
     int m_labyrinthe[4][5];
     ALuint m_Source[4];
+    const float* m_ListenerOrientation;
 
     // Position in Maze and orientation N S E W
     int position[2];
@@ -35,6 +36,8 @@ private:
     float m_Azimut;
     float m_Elevation;
     float m_Distance;
+    bool m_SimplePlayerMode;
+    bool m_DebugMode;
     vec3 m_Center;
 
     // souris
@@ -42,7 +45,7 @@ private:
     double m_MousePrecX;
     double m_MousePrecY;
 
-    // MOVE
+    // Moving
     void rotateLeft();
     void rotateRight();
     bool canMove();
@@ -90,6 +93,7 @@ public:
      */
     void onKeyDown(unsigned char code);
 
+    void updateSound();
     void playSoundLeft();
     void playSoundFront();
     void playSoundRight();

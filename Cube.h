@@ -40,11 +40,6 @@ public:
      * @param vec3 pos position
      */
     void setPosition(vec3 pos);
-
-    bool hasNorthFace(int nbFace);
-    bool hasSouthFace(int nbFace);
-    bool hasEastFace(int nbFace);
-    bool hasWestFace(int nbFace);
 };
 
 #endif
