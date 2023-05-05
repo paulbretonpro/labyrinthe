@@ -6,6 +6,8 @@
 #include <Mesh.h>
 #include <gl-matrix.h>
 
+#include "constants.h"
+
 class Cube : public Mesh
 {
 private:

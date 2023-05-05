@@ -7,6 +7,7 @@
 
 #include "Light.h"
 
+#include "constants.h"
 #include "Cube.h"
 #include "Ground.h"
 

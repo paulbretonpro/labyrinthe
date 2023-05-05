@@ -17,12 +17,6 @@
 #include "Material.h"
 #include "Cube.h"
 
-/** Directions constants */
-const int NORTH = 1;
-const int SOUTH = 2;
-const int EAST = 4;
-const int WEST = 8;
-
 using namespace mesh;
 
 /** matériau pour le cube **/
