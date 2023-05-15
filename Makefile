@@ -22,7 +22,7 @@ LIBS = -lGLEW -lGL -lGLU -lglfw -lSDL2 -lSDL2_image -lopenal -lalut
 
 
 # exécution du programme
-run:	$(EXEC)
+run: $(EXEC)
 	./$(EXEC)
 
 # édition des liens entre tous les fichiers objets
@@ -41,23 +41,19 @@ libs/%.o: libs/%.cpp libs/%.h
 	mkdir -p .o
 
 # exécution avec vérification de la mémoire
-valgrind:	$(EXEC)
+valgrind: $(EXEC)
 	valgrind --track-origins=yes --leak-check=full --num-callers=30 ./$(EXEC) | tee valgrind.log
 
 # vérification avec glslangValidator
-glslang:	$(EXEC)
+glslang: $(EXEC)
 	for f in *.vert ; do glslangValidator $${f} $${f%.vert}.frag ; done
-
-# icone
-icon:	run
-	-convert -quality 95 image.ppm ../$(shell basename $(dir $(CURDIR))).jpg
 
 # nettoyage complet : l'exécutable est supprimé aussi
 cleanall: clean
 	rm -f main image.ppm
 
 # nettoyage du projet et des librairies
-cleanalllibs:	cleanall cleanlibs
+cleanalllibs: cleanall cleanlibs
 
 # nettoyage des fichiers objets et logs du projet
 clean:

@@ -5,19 +5,22 @@
 
 #include <gl-matrix.h>
 
-#include "Light.h"
-
 #include "constants.h"
 #include "Cube.h"
 #include "Ground.h"
+#include "Light.h"
+#include "Maze.h"
 
 class Scene
 {
 private:
-    // Matrice de cube
-    Cube* m_Cube[4][5];
-    int m_labyrinthe[4][5];
+    // Labyrinthe
+    const Maze* m_Maze;
+    // Matrice des cubes
+    const std::vector<std::vector<Cube*>> m_Cube;
+    // Sources autour du joueur
     ALuint m_Source[4];
+    // Orientation du joueur
     const float* m_ListenerOrientation;
 
     // Position in Maze and orientation N S E W
@@ -56,7 +59,7 @@ private:
 
 public:
     /** constructeur, crée les objets 3D à dessiner */
-    Scene();
+    Scene(const std::string& filename);
 
     /** destructeur, libère les ressources */
     ~Scene();

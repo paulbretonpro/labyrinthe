@@ -10,6 +10,7 @@
 #include <stdlib.h>
 
 #include <utils.h>
+
 #include "Scene.h"
 
 /**
@@ -109,6 +110,8 @@ void error_callback(int error, const char *description)
 /** point d'entrée du programme **/
 int main(int argc, char **argv)
 {
+    const std::string maze_file = argc > 1 ? argv[1] : "maze/maze.num";
+
     // initialisation de GLFW
     if (!glfwInit())
     {
@@ -149,7 +152,7 @@ int main(int argc, char **argv)
     alGetError();
 
     // création de la scène => création des objets...
-    scene = new Scene();
+    scene = new Scene(maze_file);
 
     // enregistrement des fonctions callbacks
     glfwSetFramebufferSizeCallback(window, onSurfaceChanged);

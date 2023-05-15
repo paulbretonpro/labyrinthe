@@ -13,8 +13,10 @@
 #include "Scene.h"
 
 /** constructeur */
-Scene::Scene()
+Scene::Scene(const std::string& filename):
+m_Maze(Maze::import_from_file(filename))
 {
+    std::vector<std::vector<Cube*>> m_Cube;
 
     alutInit(0, NULL);
 
@@ -23,42 +25,17 @@ Scene::Scene()
 
     alGenSources(1, &source);
 
-    // INIT position in maze
+    // Initialize position in the maze
     this->position[0] = 0;
     this->position[1] = 0;
     this->direction = SOUTH;
 
-    // INIT Maze
-    m_labyrinthe[0][0] = 2;
-    m_labyrinthe[0][1] = 4;
-    m_labyrinthe[0][2] = 14;
-    m_labyrinthe[0][3] = 10;
-    m_labyrinthe[0][4] = 2;
-
-    m_labyrinthe[1][0] = 7;
-    m_labyrinthe[1][1] = 8;
-    m_labyrinthe[1][2] = 3;
-    m_labyrinthe[1][3] = 5;
-    m_labyrinthe[1][4] = 9;
-
-    m_labyrinthe[2][0] = 5;
-    m_labyrinthe[2][1] = 14;
-    m_labyrinthe[2][2] = 15;
-    m_labyrinthe[2][3] = 12;
-    m_labyrinthe[2][4] = 10;
-
-    m_labyrinthe[3][0] = 4;
-    m_labyrinthe[3][1] = 9;
-    m_labyrinthe[3][2] = 5;
-    m_labyrinthe[3][3] = 8;
-    m_labyrinthe[3][4] = 1;
-
-    // CREATE cube with maze
-    for (int row = 0; row < 4; row++)
+    // Create the cube matrix based on maze
+    for (size_t row = 0; row < m_Maze->m_Height; row++)
     {
-        for (int col = 0; col < 5; col++)
+        for (size_t col = 0; col < m_Maze->m_Width; col++)
         {
-            m_Cube[row][col] = new Cube(m_labyrinthe[row][col]);
+            m_Cube[row][col] = new Cube(m_Maze->m_Matrix[row][col]);
         }
     }
 
@@ -492,10 +469,9 @@ void Scene::onDrawFrame()
         mat4::translate(m_MatV, m_MatV, m_Center);
 
         /** dessin de l'image **/
-
-        for (int row = 0; row < 4; row++)
+        for (size_t row = 0; row < m_Maze->m_Width; row++)
         {
-            for (int col = 0; col < 5; col++)
+            for (size_t col = 0; col < m_Maze->m_Height; col++)
             {
                 m_Cube[row][col]->onRender(m_MatP, m_MatV);
                 mat4::translate(m_MatV, m_MatV, vec3::fromValues(1, 0, 0));

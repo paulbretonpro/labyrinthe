@@ -17,4 +17,6 @@ const float ORIENTATION_SOUTH[6] = {0, 0, 1, 0, 1, 0};
 const float ORIENTATION_EAST[6] = {1, 0, 0, 0, 1, 0};
 const float ORIENTATION_WEST[6] = {-1, 0, 0, 0, 1, 0};
 
+const char DELIMITER = '\t';
+
 #endif
