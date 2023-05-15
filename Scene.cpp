@@ -201,6 +201,8 @@ void Scene::onKeyDown(unsigned char code)
     case GLFW_KEY_W: // avant
         if (this->canMove() == true)
         {
+            alSourcei(source, AL_BUFFER, bufferWalk);
+            alSourcePlay(source);
             vec3::transformMat4(offset, vec3::fromValues(0, 0, 1), m_MatTMP);
 
             // obtenir la direction relative à la caméra
@@ -214,6 +216,8 @@ void Scene::onKeyDown(unsigned char code)
         }
         else
         {
+            alSourcei(source, AL_BUFFER, bufferWall);
+            alSourcePlay(source);
             std::cout << "PAS POSSIBLE" << std::endl;
         }
         break;
