@@ -26,7 +26,7 @@ Scene::Scene()
     // INIT position in maze
     this->position[0] = 0;
     this->position[1] = 0;
-    this->direction = 2;
+    this->direction = SOUTH;
 
     // INIT Maze
     m_labyrinthe[0][0] = 2;
@@ -62,15 +62,8 @@ Scene::Scene()
         }
     }
 
-    // caractéristiques de la lampe
-    m_Light = new Light();
-    m_Light->setColor(500.0, 500.0, 500.0);
-    m_Light->setPosition(0.0, 16.0, 13.0, 1.0);
-    m_Light->setDirection(0.0, -1.0, -1.0, 0.0);
-    m_Light->setAngles(30.0, 40.0);
-
     // couleur du fond : gris foncé
-    glClearColor(0.4, 0.4, 0.4, 0.0);
+    glClearColor(0.3, 0.3, 0.4, 0);
 
     // activer le depth buffer
     glEnable(GL_DEPTH_TEST);
@@ -83,11 +76,54 @@ Scene::Scene()
     m_MatTMP = mat4::create();
 
     // gestion vue et souris
-    m_Azimut = 180.0;
-    m_Elevation = 0.0;
-    m_Distance = 0.0;
+    m_Azimut = 180;
+    m_Elevation = 0;
+    m_Distance = 0;
+    m_SimplePlayerMode = false;
+    m_DebugMode = false;
     m_Center = vec3::create();
     m_Clicked = false;
+
+    // ouverture du flux audio à placer dans le buffer
+    ALuint buffer = alutCreateBufferFromFile("data/white_noise.wav");
+    if (buffer == AL_NONE)
+    {
+        std::cerr << "unable to open sound file " << std::endl;
+        alGetError();
+        throw std::runtime_error("file not found or not readable");
+    }
+
+    // lien buffer -> sources
+    alGenSources(4, m_Source);
+
+    for (int i = 0; i < 4; i++)
+    {
+        alSourcei(m_Source[i], AL_BUFFER, buffer);
+
+        // propriétés de la source à l'origine
+        alSourcei(m_Source[i], AL_LOOPING, AL_FALSE);
+
+        // Définit la distance à partir de laquelle on atténue le son des murs
+        alSourcef(m_Source[i], AL_REFERENCE_DISTANCE, 1.0);
+
+        // diminue le gain du son
+        alSourcef(m_Source[i], AL_GAIN, 0.5);
+    }
+
+    // positionne le joueur au centre
+    alListener3f(AL_POSITION, 0, 0, 0);
+    alListener3f(AL_VELOCITY, 0, 0, 0);
+
+    // on positionne les sources autour de lui à une distance de 1
+    alSource3f(m_Source[SOURCE_NORTH], AL_POSITION, 0, 0, -1);
+    alSource3f(m_Source[SOURCE_SOUTH], AL_POSITION, 0, 0, 1);
+    alSource3f(m_Source[SOURCE_EAST], AL_POSITION, 1, 0, 0);
+    alSource3f(m_Source[SOURCE_WEST], AL_POSITION, -1, 0, 0);
+
+    if (m_SimplePlayerMode)
+    {
+        updateSound();
+    }
 }
 
 /**
@@ -101,7 +137,7 @@ void Scene::onSurfaceChanged(int width, int height)
     glViewport(0, 0, width, height);
 
     // matrice de projection (champ de vision)
-    mat4::perspective(m_MatP, Utils::radians(80.0), (float)width / height, 0.1, 100.0);
+    mat4::perspective(m_MatP, Utils::radians(100), (float)width / height, 0.1, 100);
 }
 
 /**
@@ -165,28 +201,265 @@ void Scene::onKeyDown(unsigned char code)
     case GLFW_KEY_W: // avant
         if (this->canMove() == true)
         {
-            alSourcei(source, AL_BUFFER, bufferWalk);
-            alSourcePlay(source);
-            vec3::transformMat4(offset, vec3::fromValues(0, 0, +1), m_MatTMP);
+            vec3::transformMat4(offset, vec3::fromValues(0, 0, 1), m_MatTMP);
+
+            // obtenir la direction relative à la caméra
+            vec4 dir = vec4::fromValues(0, 0, 1, 0);
+            vec4::transformMat4(dir, dir, m_MatVM);
+
+            if (m_SimplePlayerMode)
+            {
+                updateSound();
+            }
         }
         else
         {
-            alSourcei(source, AL_BUFFER, bufferWall);
-            alSourcePlay(source);
             std::cout << "PAS POSSIBLE" << std::endl;
         }
         break;
+
     case GLFW_KEY_D: // rotation à droite
         m_Azimut += 90;
         rotateRight();
+        if (m_SimplePlayerMode)
+        {
+            updateSound();
+        }
         break;
+
     case GLFW_KEY_A: // rotation à gauche
         m_Azimut -= 90;
         rotateLeft();
+        if (m_SimplePlayerMode)
+        {
+            updateSound();
+        }
         break;
-    };
+
+    case GLFW_KEY_H: // son à gauche
+        if (!m_SimplePlayerMode)
+        {
+            playSoundLeft();
+        }
+        break;
+
+    case GLFW_KEY_U: // son devant
+        if (!m_SimplePlayerMode)
+        {
+            playSoundFront();
+        }
+        break;
+
+    case GLFW_KEY_K: // son à droite
+        if (!m_SimplePlayerMode)
+        {
+            playSoundRight();
+        }
+        break;
+
+    case GLFW_KEY_J: // son des 3 directions à la fois
+        if (!m_SimplePlayerMode)
+        {
+            playSoundLeft();
+            playSoundFront();
+            playSoundRight();
+        }
+        break;
+
+    case GLFW_KEY_L: // change le mode de son
+        m_SimplePlayerMode = !m_SimplePlayerMode;
+
+        for (int i = 0; i < 4; i++)
+        {
+            alSourcei(m_Source[i], AL_LOOPING, m_SimplePlayerMode ? AL_TRUE : AL_FALSE);
+        }
+
+        if (m_SimplePlayerMode)
+        {
+            updateSound();
+        }
+        break;
+
+    case GLFW_KEY_B: // change le mode d'affichage (vide ou plein)
+        m_DebugMode = !m_DebugMode;
+        break;
+
+    default:
+        return;
+    }
+
     // appliquer le décalage au centre de la rotation
     vec3::add(m_Center, m_Center, offset);
+}
+
+void Scene::updateSound()
+{
+    int cellValue = m_labyrinthe[position[0]][position[1]];
+
+    // Set the listener orientation to point towards a cardinal point
+    switch (direction)
+    {
+    case NORTH:
+        m_ListenerOrientation = ORIENTATION_NORTH;
+        break;
+
+    case SOUTH:
+        m_ListenerOrientation = ORIENTATION_SOUTH;
+        break;
+
+    case EAST:
+        m_ListenerOrientation = ORIENTATION_EAST;
+        break;
+
+    case WEST:
+        m_ListenerOrientation = ORIENTATION_WEST;
+        break;
+    }
+    alListenerfv(AL_ORIENTATION, m_ListenerOrientation);
+
+    if ((cellValue & NORTH) == 0 && this->direction != SOUTH)
+    {
+        alSourcePlay(m_Source[SOURCE_NORTH]);
+    }
+    else
+    {
+        alSourcePause(m_Source[SOURCE_NORTH]);
+    }
+
+    if ((cellValue & SOUTH) == 0 && this->direction != NORTH)
+    {
+        alSourcePlay(m_Source[SOURCE_SOUTH]);
+    }
+    else
+    {
+        alSourcePause(m_Source[SOURCE_SOUTH]);
+    }
+
+    if ((cellValue & EAST) == 0 && this->direction != WEST)
+    {
+        alSourcePlay(m_Source[SOURCE_EAST]);
+    }
+    else
+    {
+        alSourcePause(m_Source[SOURCE_EAST]);
+    }
+
+    if ((cellValue & WEST) == 0 && this->direction != EAST)
+    {
+        alSourcePlay(m_Source[SOURCE_WEST]);
+    }
+    else
+    {
+        alSourcePause(m_Source[SOURCE_WEST]);
+    }
+}
+
+void Scene::playSoundLeft()
+{
+    int cellValue = m_labyrinthe[position[0]][position[1]];
+
+    switch (direction)
+    {
+    case NORTH:
+        if ((cellValue & WEST) == 0)
+        {
+            alSourcePlay(m_Source[SOURCE_WEST]);
+        }
+        break;
+
+    case SOUTH:
+        if ((cellValue & EAST) == 0)
+        {
+            alSourcePlay(m_Source[SOURCE_WEST]);
+        }
+        break;
+
+    case EAST:
+        if ((cellValue & NORTH) == 0)
+        {
+            alSourcePlay(m_Source[SOURCE_WEST]);
+        }
+        break;
+
+    case WEST:
+        if ((cellValue & SOUTH) == 0)
+        {
+            alSourcePlay(m_Source[SOURCE_WEST]);
+        }
+        break;
+    }
+}
+
+void Scene::playSoundFront()
+{
+    int cellValue = m_labyrinthe[position[0]][position[1]];
+
+    switch (direction)
+    {
+    case NORTH:
+        if ((cellValue & NORTH) == 0)
+        {
+            alSourcePlay(m_Source[SOURCE_NORTH]);
+        }
+        break;
+
+    case SOUTH:
+        if ((cellValue & SOUTH) == 0)
+        {
+            alSourcePlay(m_Source[SOURCE_NORTH]);
+        }
+        break;
+
+    case EAST:
+        if ((cellValue & EAST) == 0)
+        {
+            alSourcePlay(m_Source[SOURCE_NORTH]);
+        }
+        break;
+
+    case WEST:
+        if ((cellValue & WEST) == 0)
+        {
+            alSourcePlay(m_Source[SOURCE_NORTH]);
+        }
+        break;
+    }
+}
+
+void Scene::playSoundRight()
+{
+    int cellValue = m_labyrinthe[position[0]][position[1]];
+
+    switch (direction)
+    {
+    case NORTH:
+        if ((cellValue & EAST) == 0)
+        {
+            alSourcePlay(m_Source[SOURCE_NORTH]);
+        }
+        break;
+
+    case SOUTH:
+        if ((cellValue & WEST) == 0)
+        {
+            alSourcePlay(m_Source[SOURCE_NORTH]);
+        }
+        break;
+
+    case EAST:
+        if ((cellValue & SOUTH) == 0)
+        {
+            alSourcePlay(m_Source[SOURCE_NORTH]);
+        }
+        break;
+
+    case WEST:
+        if ((cellValue & NORTH) == 0)
+        {
+            alSourcePlay(m_Source[SOURCE_NORTH]);
+        }
+        break;
+    }
 }
 
 /**
@@ -194,41 +467,37 @@ void Scene::onKeyDown(unsigned char code)
  */
 void Scene::onDrawFrame()
 {
-    /** préparation des matrices **/
-
-    // positionner la caméra
-    mat4::identity(m_MatV);
-
-    // éloignement de la scène
-    mat4::translate(m_MatV, m_MatV, vec3::fromValues(0.0, 0.0, -m_Distance));
-
-    // rotation demandée par la souris
-    mat4::rotateX(m_MatV, m_MatV, Utils::radians(m_Elevation));
-    mat4::rotateY(m_MatV, m_MatV, Utils::radians(m_Azimut));
-
-    // centre des rotations
-    mat4::translate(m_MatV, m_MatV, m_Center);
-
-    /** gestion des lampes **/
-
-    // calculer la position et la direction de la lampe par rapport à la scène
-    m_Light->transform(m_MatV);
-
-    // fournir position et direction en coordonnées caméra aux objets éclairés
-
-    /** dessin de l'image **/
-
     // effacer l'écran
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (int row = 0; row < 4; row++)
+    if (m_DebugMode)
     {
-        for (int col = 0; col < 5; col++)
+        /** préparation des matrices **/
+
+        // positionner la caméra
+        mat4::identity(m_MatV);
+
+        // éloignement de la scène
+        mat4::translate(m_MatV, m_MatV, vec3::fromValues(0, 0, -m_Distance));
+
+        // rotation demandée par la souris
+        mat4::rotateX(m_MatV, m_MatV, Utils::radians(m_Elevation));
+        mat4::rotateY(m_MatV, m_MatV, Utils::radians(m_Azimut));
+
+        // centre des rotations
+        mat4::translate(m_MatV, m_MatV, m_Center);
+
+        /** dessin de l'image **/
+
+        for (int row = 0; row < 4; row++)
         {
-            m_Cube[row][col]->onRender(m_MatP, m_MatV);
-            mat4::translate(m_MatV, m_MatV, vec3::fromValues(1.0, 0.0, 0.0));
+            for (int col = 0; col < 5; col++)
+            {
+                m_Cube[row][col]->onRender(m_MatP, m_MatV);
+                mat4::translate(m_MatV, m_MatV, vec3::fromValues(1, 0, 0));
+            }
+            mat4::translate(m_MatV, m_MatV, vec3::fromValues(-5.0, 0, 1));
         }
-        mat4::translate(m_MatV, m_MatV, vec3::fromValues(-5.0, 0.0, 1.0));
     }
 }
 
@@ -236,17 +505,17 @@ void Scene::rotateLeft()
 {
     switch (this->direction)
     {
-    case 1:
-        this->direction = 8;
+    case NORTH:
+        direction = WEST;
         break;
-    case 2:
-        this->direction = 4;
+    case SOUTH:
+        direction = EAST;
         break;
-    case 4:
-        this->direction = 1;
+    case EAST:
+        direction = NORTH;
         break;
-    case 8:
-        this->direction = 2;
+    case WEST:
+        direction = SOUTH;
         break;
 
     default:
@@ -256,19 +525,19 @@ void Scene::rotateLeft()
 
 void Scene::rotateRight()
 {
-    switch (this->direction)
+    switch (direction)
     {
-    case 1:
-        this->direction = 4;
+    case NORTH:
+        direction = EAST;
         break;
-    case 2:
-        this->direction = 8;
+    case SOUTH:
+        direction = WEST;
         break;
-    case 4:
-        this->direction = 2;
+    case EAST:
+        direction = SOUTH;
         break;
-    case 8:
-        this->direction = 1;
+    case WEST:
+        direction = NORTH;
         break;
 
     default:
@@ -281,24 +550,24 @@ bool Scene::canMove()
     int x = this->position[0];
     int y = this->position[1];
 
-    int mazeValue = this->m_labyrinthe[x][y];
+    int cellValue = this->m_labyrinthe[x][y];
 
-    if (this->direction == 1 && (mazeValue == 1 || mazeValue == 3 || mazeValue == 5 || mazeValue == 7 || mazeValue == 9 || mazeValue == 11 || mazeValue == 13 || mazeValue == 15))
+    if (this->direction == NORTH && (cellValue & NORTH) != 0)
     {
         this->position[0] = x - 1;
         return true;
     }
-    if (this->direction == 2 && (mazeValue == 2 || mazeValue == 3 || mazeValue == 6 || mazeValue == 7 || mazeValue == 10 || mazeValue == 11 || mazeValue == 14 || mazeValue == 15))
+    if (this->direction == SOUTH && (cellValue & SOUTH) != 0)
     {
         this->position[0] = x + 1;
         return true;
     }
-    if (this->direction == 4 && (mazeValue == 4 || mazeValue == 5 || mazeValue == 6 || mazeValue == 7 || mazeValue == 12 || mazeValue == 13 || mazeValue == 14 || mazeValue == 15))
+    if (this->direction == EAST && (cellValue & EAST) != 0)
     {
         this->position[1] = y + 1;
         return true;
     }
-    if (this->direction == 8 && (mazeValue == 8 || mazeValue == 9 || mazeValue == 10 || mazeValue == 11 || mazeValue == 12 || mazeValue == 13 || mazeValue == 14 || mazeValue == 15))
+    if (this->direction == WEST && (cellValue & WEST) != 0)
     {
         this->position[1] = y - 1;
         return true;

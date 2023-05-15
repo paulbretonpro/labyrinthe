@@ -7,16 +7,18 @@
 
 #include "Light.h"
 
+#include "constants.h"
 #include "Cube.h"
-#include "Duck.h"
 #include "Ground.h"
 
 class Scene
 {
 private:
     // Matrice de cube
-    Cube *m_Cube[4][5];
+    Cube* m_Cube[4][5];
     int m_labyrinthe[4][5];
+    ALuint m_Source[4];
+    const float* m_ListenerOrientation;
 
     // Position in Maze and orientation N S E W
     int position[2];
@@ -26,7 +28,7 @@ private:
     ALuint source, bufferWalk, bufferWall;
 
     // lampes
-    Light *m_Light;
+    Light* m_Light;
 
     // matrices de transformation des objets de la scène
     mat4 m_MatP;
@@ -38,6 +40,8 @@ private:
     float m_Azimut;
     float m_Elevation;
     float m_Distance;
+    bool m_SimplePlayerMode;
+    bool m_DebugMode;
     vec3 m_Center;
 
     // souris
@@ -45,7 +49,7 @@ private:
     double m_MousePrecX;
     double m_MousePrecY;
 
-    // MOVE
+    // Moving
     void rotateLeft();
     void rotateRight();
     bool canMove();
@@ -92,6 +96,11 @@ public:
      * @param code : touche enfoncée
      */
     void onKeyDown(unsigned char code);
+
+    void updateSound();
+    void playSoundLeft();
+    void playSoundFront();
+    void playSoundRight();
 
     /** Dessine l'image courante */
     void onDrawFrame();

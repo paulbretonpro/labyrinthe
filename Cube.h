@@ -6,23 +6,16 @@
 #include <Mesh.h>
 #include <gl-matrix.h>
 
+#include "constants.h"
+
 class Cube : public Mesh
 {
 private:
     /** matériau */
-    Material *m_Material;
+    Material* m_Material;
 
     /** position 3D du cube */
     vec3 m_Position;
-
-    /** open face enum*/
-    enum DirectionsENUM
-    {
-        SOUTH,
-        NORTH,
-        EAST,
-        WEST,
-    };
 
 public:
     /** constructeur, crée le VBO et le shader */
@@ -49,11 +42,6 @@ public:
      * @param vec3 pos position
      */
     void setPosition(vec3 pos);
-
-    bool hasNorthFace(int nbFace);
-    bool hasSouthFace(int nbFace);
-    bool hasEastFace(int nbFace);
-    bool hasWestFace(int nbFace);
 };
 
 #endif

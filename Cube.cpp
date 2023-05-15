@@ -14,8 +14,8 @@
 
 #include <utils.h>
 
-#include <Cube.h>
-#include <Material.h>
+#include "Material.h"
+#include "Cube.h"
 
 using namespace mesh;
 
@@ -80,69 +80,35 @@ Cube::Cube(const int nbFace) : Mesh("cube")
     Vertex *P6 = new Vertex(this, -b, -b, -b);
     Vertex *P7 = new Vertex(this, -b, -b, +b);
 
-    // couleurs
-    P0->setColor(0.0, 0.5, 1.0); // P0 bleu
-    P1->setColor(1.0, 0.5, 0.0); // P1 orange
-    P2->setColor(0.0, 0.7, 0.0); // P2 vert foncé
-    P3->setColor(0.7, 0.0, 0.7); // P3 violet
-    P4->setColor(0.0, 1.0, 1.0); // P4 cyan
-    P5->setColor(0.5, 1.0, 0.0); // P7 vert clair
-    P6->setColor(0.5, 0.0, 0.5); // P5 magenta
-    P7->setColor(1.0, 1.0, 0.0); // P6 jaune
+    P0->setColor(0.6, 0.6, 0.6);
+    P1->setColor(0.6, 0.6, 0.6);
+    P2->setColor(0.6, 0.6, 0.6);
+    P3->setColor(0.6, 0.6, 0.6);
+    P4->setColor(0.2, 0.2, 0.2);
+    P5->setColor(0.2, 0.2, 0.2);
+    P6->setColor(0.2, 0.2, 0.2);
+    P7->setColor(0.2, 0.2, 0.2);
 
-    // bottom
+    // bottom face
     addQuad(P4, P5, P6, P7);
     if (nbFace < 15)
     {
-        // FACE EAST
-        if (hasEastFace(nbFace))
+        // East face
+        if ((nbFace & EAST) == 0)
             addQuad(P5, P4, P0, P1);
-        // FACE SOUTH
-        if (hasSouthFace(nbFace))
+
+        // South dace
+        if ((nbFace & SOUTH) == 0)
             addQuad(P4, P7, P3, P0);
-        // FACE WEST
-        if (hasWestFace(nbFace))
+
+        // West face
+        if ((nbFace & WEST) == 0)
             addQuad(P7, P6, P2, P3);
-        // FACE NORTH
-        if (hasNorthFace(nbFace))
+
+        // North face
+        if ((nbFace & NORTH) == 0)
             addQuad(P6, P5, P1, P2);
     }
-}
-
-bool Cube::hasNorthFace(int nbFace)
-{
-    if (nbFace == 2 || nbFace == 4 || nbFace == 6 || nbFace == 8 || nbFace == 10 || nbFace == 12 || nbFace == 14)
-    {
-        return true;
-    }
-    return false;
-}
-
-bool Cube::hasSouthFace(int nbFace)
-{
-    if (nbFace == 1 || nbFace == 4 || nbFace == 5 || nbFace == 8 || nbFace == 9 || nbFace == 12 || nbFace == 13)
-    {
-        return true;
-    }
-    return false;
-}
-
-bool Cube::hasEastFace(int nbFace)
-{
-    if (nbFace == 1 || nbFace == 2 || nbFace == 3 || nbFace == 8 || nbFace == 9 || nbFace == 10 || nbFace == 11)
-    {
-        return true;
-    }
-    return false;
-}
-
-bool Cube::hasWestFace(int nbFace)
-{
-    if (nbFace == 1 || nbFace == 2 || nbFace == 3 || nbFace == 4 || nbFace == 5 || nbFace == 6 || nbFace == 7)
-    {
-        return true;
-    }
-    return false;
 }
 
 /**

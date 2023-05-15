@@ -130,8 +130,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     glfwMakeContextCurrent(window);
-    glfwSetWindowPos(window, 200, 200);
-    glfwSetWindowTitle(window, "Cameras - TurnTable");
+    glfwSetWindowTitle(window, "Labyrinthe à l'aveugle");
 
     // initialisation de glew
     GLenum err = glewInit();
@@ -149,13 +148,8 @@ int main(int argc, char **argv)
     alutInit(0, NULL);
     alGetError();
 
-    // position de la caméra qui écoute
-    alListener3f(AL_POSITION, 0, 0, 10);
-    alListener3f(AL_VELOCITY, 0, 0, 0);
-
     // création de la scène => création des objets...
     scene = new Scene();
-    // debugGLFatal("new Scene()");
 
     // enregistrement des fonctions callbacks
     glfwSetFramebufferSizeCallback(window, onSurfaceChanged);
@@ -166,8 +160,12 @@ int main(int argc, char **argv)
 
     // affichage du mode d'emploi
     std::cout << "Usage:" << std::endl;
-    std::cout << "Left button to rotate object" << std::endl;
-    std::cout << "Q,D (axis x) A,W (axis y) Z,S (axis z) keys to move" << std::endl;
+    std::cout << "Q / D (turn left / right)" << std::endl;
+    std::cout << "Z (step forward)" << std::endl;
+    std::cout << "H, U, K (check for a wall on the left, front, right (simple mode))" << std::endl;
+    std::cout << "J (check for the same three at the same time (simple mode))" << std::endl;
+    std::cout << "L (change player mode (simple [DEFAULT] / advanced))" << std::endl;
+    std::cout << "B (change debug mode (enabled / disabled [DEFAULT]))" << std::endl;
 
     // boucle principale
     onSurfaceChanged(window, 640, 480);
