@@ -1,10 +1,10 @@
 CC = g++
 CFLAGS = -std=c++11 -Wall
 
-SRCS = Maze.cpp
+SRCS = mazer.cpp ../Maze.cpp
 OBJS = $(SRCS:.cpp=.o)
 
-EXEC = Maze
+EXEC = mazer
 
 all: $(EXEC)
 

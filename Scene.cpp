@@ -11,20 +11,19 @@
 #include <utils.h>
 
 #include "Scene.h"
-#include "maze/Maze.h"
 
 /** constructeur */
 Scene::Scene(const std::string& filename)
 {
-    Maze maze = Maze::import_from_file(filename);
+    m_Maze = Maze::import_from_file(filename);
     std::vector<std::vector<Cube*>> m_Cube;
 
     // créer les objets à dessiner
-    for (int row = 0; row < 4; row++)
+    for (size_t row = 0; row < m_Maze->m_Height; row++)
     {
-        for (int col = 0; col < 5; col++)
+        for (size_t col = 0; col < m_Maze->m_Width; col++)
         {
-            m_Cube[row][col] = new Cube(maze[row][col]);
+            m_Cube[row][col] = new Cube(m_Maze->m_Matrix[row][col]);
         }
     }
 
@@ -188,9 +187,9 @@ void Scene::onDrawFrame()
     // effacer l'écran
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (int row = 0; row < 4; row++)
+    for (size_t row = 0; row < m_Maze->m_Width; row++)
     {
-        for (int col = 0; col < 5; col++)
+        for (size_t col = 0; col < m_Maze->m_Height; col++)
         {
             m_Cube[row][col]->onRender(m_MatP, m_MatV);
             mat4::translate(m_MatV, m_MatV, vec3::fromValues(1.0, 0.0, 0.0));

@@ -10,15 +10,17 @@
 #include "Cube.h"
 #include "Duck.h"
 #include "Ground.h"
+#include "Maze.h"
 
 class Scene
 {
 private:
+    const Maze* m_Maze;
     // Matrice de cube
-    std::vector<std::vector<Cube>> *m_Cube;
+    const std::vector<std::vector<Cube*>> m_Cube;
 
     // lampes
-    Light *m_Light;
+    Light* m_Light;
 
     // matrices de transformation des objets de la scène
     mat4 m_MatP;
