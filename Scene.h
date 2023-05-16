@@ -7,16 +7,11 @@
 
 #include "constants.h"
 #include "Cube.h"
-#include "Ground.h"
-#include "Light.h"
 #include "Maze.h"
 
 class Scene
 {
 private:
-    // lampes
-    Light* m_Light;
-
     // matrices de transformation des objets de la scène
     mat4 m_MatP;
     mat4 m_MatV;
