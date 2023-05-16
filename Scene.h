@@ -14,22 +14,6 @@
 class Scene
 {
 private:
-    // Labyrinthe
-    const Maze* m_Maze;
-    // Matrice des cubes
-    const std::vector<std::vector<Cube*>> m_Cube;
-    // Sources autour du joueur
-    ALuint m_Source[4];
-    // Orientation du joueur
-    const float* m_ListenerOrientation;
-
-    // Position in Maze and orientation N S E W
-    int position[2];
-    int direction;
-
-    // Sound
-    ALuint source, bufferWalk, bufferWall;
-
     // lampes
     Light* m_Light;
 
@@ -52,10 +36,33 @@ private:
     double m_MousePrecX;
     double m_MousePrecY;
 
+    // Labyrinthe
+    const Maze* m_Maze;
+
+    // Matrice des cubes
+    const std::vector<std::vector<Cube*>> m_Cube;
+
+    // Sources liées au joueur 
+    ALuint m_Walkource;
+    ALuint m_CollisionSource;
+
+    // Sources autour du joueur
+    ALuint m_Source[4];
+
+    // Orientation du joueur
+    const float* m_ListenerOrientation;
+
+    // Position in Maze and orientation N S E W
+    int m_Position[2];
+    int m_Direction;
+
+    // Constructor auxiliary method
+    std::vector<std::vector<Cube*>> make_cube_matrix();
+
     // Moving
     void rotateLeft();
     void rotateRight();
-    bool canMove();
+    bool stepForward();
 
 public:
     /** constructeur, crée les objets 3D à dessiner */
@@ -100,6 +107,7 @@ public:
      */
     void onKeyDown(unsigned char code);
 
+    void updateListener();
     void updateSound();
     void playSoundLeft();
     void playSoundFront();

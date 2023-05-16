@@ -91,24 +91,22 @@ Cube::Cube(const int nbFace) : Mesh("cube")
 
     // bottom face
     addQuad(P4, P5, P6, P7);
-    if (nbFace < 15)
-    {
-        // East face
-        if ((nbFace & EAST) == 0)
-            addQuad(P5, P4, P0, P1);
 
-        // South dace
-        if ((nbFace & SOUTH) == 0)
-            addQuad(P4, P7, P3, P0);
+    // East face
+    if ((nbFace & EAST) == 0)
+        addQuad(P5, P4, P0, P1);
 
-        // West face
-        if ((nbFace & WEST) == 0)
-            addQuad(P7, P6, P2, P3);
+    // South dace
+    if ((nbFace & SOUTH) == 0)
+        addQuad(P4, P7, P3, P0);
 
-        // North face
-        if ((nbFace & NORTH) == 0)
-            addQuad(P6, P5, P1, P2);
-    }
+    // West face
+    if ((nbFace & WEST) == 0)
+        addQuad(P7, P6, P2, P3);
+
+    // North face
+    if ((nbFace & NORTH) == 0)
+        addQuad(P6, P5, P1, P2);
 }
 
 /**

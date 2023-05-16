@@ -14,32 +14,10 @@
 
 /** constructeur */
 Scene::Scene(const std::string& filename):
-m_Maze(Maze::import_from_file(filename))
+m_Maze(Maze::import_from_file(filename)),
+m_Cube(Scene::make_cube_matrix())
 {
-    std::vector<std::vector<Cube*>> m_Cube;
-
-    alutInit(0, NULL);
-
-    bufferWalk = alutCreateBufferFromFile("data/walk.wav");
-    bufferWall = alutCreateBufferFromFile("data/wall.wav");
-
-    alGenSources(1, &source);
-
-    // Initialize position in the maze
-    this->position[0] = 0;
-    this->position[1] = 0;
-    this->direction = SOUTH;
-
-    // Create the cube matrix based on maze
-    for (size_t row = 0; row < m_Maze->m_Height; row++)
-    {
-        for (size_t col = 0; col < m_Maze->m_Width; col++)
-        {
-            m_Cube[row][col] = new Cube(m_Maze->m_Matrix[row][col]);
-        }
-    }
-
-    // couleur du fond : gris foncé
+    // couleur du fond : bleu
     glClearColor(0.3, 0.3, 0.4, 0);
 
     // activer le depth buffer
@@ -53,7 +31,7 @@ m_Maze(Maze::import_from_file(filename))
     m_MatTMP = mat4::create();
 
     // gestion vue et souris
-    m_Azimut = 180;
+    m_Azimut = 0;
     m_Elevation = 0;
     m_Distance = 0;
     m_SimplePlayerMode = false;
@@ -61,26 +39,62 @@ m_Maze(Maze::import_from_file(filename))
     m_Center = vec3::create();
     m_Clicked = false;
 
-    // ouverture du flux audio à placer dans le buffer
-    ALuint buffer = alutCreateBufferFromFile("data/white_noise.wav");
-    if (buffer == AL_NONE)
+    // Initialize position in the maze
+    m_Position[0] = 0;
+    m_Position[1] = 0;
+    m_Direction = EAST;
+
+    switch (m_Direction)
     {
-        std::cerr << "unable to open sound file " << std::endl;
+        case NORTH:
+            m_Azimut = 0;
+            break;
+
+        case SOUTH:
+            m_Azimut = 180;
+            break;
+
+        case EAST:
+            m_Azimut = 90;
+            break;
+
+        case WEST:
+            m_Azimut = 270;
+            break;
+    }
+
+    // ouverture des fichiers audios à placer dans les buffers
+    ALuint walkBuffer = alutCreateBufferFromFile("data/walk.wav");
+    ALuint collisionBuffer = alutCreateBufferFromFile("data/wall.wav");
+    ALuint noiseBuffer = alutCreateBufferFromFile("data/white_noise.wav");
+    if (walkBuffer == AL_NONE || collisionBuffer == AL_NONE || noiseBuffer == AL_NONE)
+    {
+        std::cerr << "unable to open sound file" << std::endl;
         alGetError();
         throw std::runtime_error("file not found or not readable");
     }
 
-    // lien buffer -> sources
+    // Creates walk, collision and ambiant sources (walls' noise)
+    alGenSources(1, &m_Walkource);
+    alGenSources(1, &m_CollisionSource);
     alGenSources(4, m_Source);
+
+    // Attribue des buffers aux sources
+    alSourcei(m_Walkource, AL_BUFFER, walkBuffer);
+    alSourcei(m_CollisionSource, AL_BUFFER, collisionBuffer);
+
+    // Diminue le gain des sources du joueur
+    alSourcef(m_Walkource, AL_GAIN, 0.5);
+    alSourcef(m_CollisionSource, AL_GAIN, 0.2);
 
     for (int i = 0; i < 4; i++)
     {
-        alSourcei(m_Source[i], AL_BUFFER, buffer);
+        alSourcei(m_Source[i], AL_BUFFER, noiseBuffer);
 
         // propriétés de la source à l'origine
         alSourcei(m_Source[i], AL_LOOPING, AL_FALSE);
 
-        // Définit la distance à partir de laquelle on atténue le son des murs
+        // définit la distance à partir de laquelle on atténue le son des murs
         alSourcef(m_Source[i], AL_REFERENCE_DISTANCE, 1.0);
 
         // diminue le gain du son
@@ -97,10 +111,27 @@ m_Maze(Maze::import_from_file(filename))
     alSource3f(m_Source[SOURCE_EAST], AL_POSITION, 1, 0, 0);
     alSource3f(m_Source[SOURCE_WEST], AL_POSITION, -1, 0, 0);
 
+    updateListener();
+
     if (m_SimplePlayerMode)
     {
         updateSound();
     }
+}
+
+std::vector<std::vector<Cube*>> Scene::make_cube_matrix() {
+    std::vector<std::vector<Cube*>> cube_matrix(m_Maze->m_Height, std::vector<Cube*>(m_Maze->m_Width, nullptr));
+
+    // Create the cube matrix based on maze
+    for (size_t row = 0; row < m_Maze->m_Height; row++)
+    {
+        for (size_t col = 0; col < m_Maze->m_Width; col++)
+        {
+            cube_matrix[row][col] = new Cube(m_Maze->m_Matrix[row][col]);
+        }
+    }
+
+    return cube_matrix;
 }
 
 /**
@@ -176,10 +207,9 @@ void Scene::onKeyDown(unsigned char code)
     switch (code)
     {
     case GLFW_KEY_W: // avant
-        if (this->canMove() == true)
+        if (stepForward() == true)
         {
-            alSourcei(source, AL_BUFFER, bufferWalk);
-            alSourcePlay(source);
+            alSourcePlay(m_Walkource);
             vec3::transformMat4(offset, vec3::fromValues(0, 0, 1), m_MatTMP);
 
             // obtenir la direction relative à la caméra
@@ -193,15 +223,15 @@ void Scene::onKeyDown(unsigned char code)
         }
         else
         {
-            alSourcei(source, AL_BUFFER, bufferWall);
-            alSourcePlay(source);
-            std::cout << "PAS POSSIBLE" << std::endl;
+            alSourcePlay(m_CollisionSource);
+            std::cout << "Action impossible" << std::endl;
         }
         break;
 
     case GLFW_KEY_D: // rotation à droite
         m_Azimut += 90;
         rotateRight();
+        updateListener();
         if (m_SimplePlayerMode)
         {
             updateSound();
@@ -211,6 +241,7 @@ void Scene::onKeyDown(unsigned char code)
     case GLFW_KEY_A: // rotation à gauche
         m_Azimut -= 90;
         rotateLeft();
+        updateListener();
         if (m_SimplePlayerMode)
         {
             updateSound();
@@ -273,12 +304,10 @@ void Scene::onKeyDown(unsigned char code)
     vec3::add(m_Center, m_Center, offset);
 }
 
-void Scene::updateSound()
+void Scene::updateListener()
 {
-    int cellValue = m_labyrinthe[position[0]][position[1]];
-
     // Set the listener orientation to point towards a cardinal point
-    switch (direction)
+    switch (m_Direction)
     {
     case NORTH:
         m_ListenerOrientation = ORIENTATION_NORTH;
@@ -297,8 +326,13 @@ void Scene::updateSound()
         break;
     }
     alListenerfv(AL_ORIENTATION, m_ListenerOrientation);
+}
 
-    if ((cellValue & NORTH) == 0 && this->direction != SOUTH)
+void Scene::updateSound()
+{
+    int cellValue = m_Maze->m_Matrix[m_Position[0]][m_Position[1]];
+
+    if ((cellValue & NORTH) == 0 && m_Direction != SOUTH)
     {
         alSourcePlay(m_Source[SOURCE_NORTH]);
     }
@@ -307,7 +341,7 @@ void Scene::updateSound()
         alSourcePause(m_Source[SOURCE_NORTH]);
     }
 
-    if ((cellValue & SOUTH) == 0 && this->direction != NORTH)
+    if ((cellValue & SOUTH) == 0 && m_Direction != NORTH)
     {
         alSourcePlay(m_Source[SOURCE_SOUTH]);
     }
@@ -316,7 +350,7 @@ void Scene::updateSound()
         alSourcePause(m_Source[SOURCE_SOUTH]);
     }
 
-    if ((cellValue & EAST) == 0 && this->direction != WEST)
+    if ((cellValue & EAST) == 0 && m_Direction != WEST)
     {
         alSourcePlay(m_Source[SOURCE_EAST]);
     }
@@ -325,7 +359,7 @@ void Scene::updateSound()
         alSourcePause(m_Source[SOURCE_EAST]);
     }
 
-    if ((cellValue & WEST) == 0 && this->direction != EAST)
+    if ((cellValue & WEST) == 0 && m_Direction != EAST)
     {
         alSourcePlay(m_Source[SOURCE_WEST]);
     }
@@ -337,9 +371,9 @@ void Scene::updateSound()
 
 void Scene::playSoundLeft()
 {
-    int cellValue = m_labyrinthe[position[0]][position[1]];
+    int cellValue = m_Maze->m_Matrix[m_Position[0]][m_Position[1]];
 
-    switch (direction)
+    switch (m_Direction)
     {
     case NORTH:
         if ((cellValue & WEST) == 0)
@@ -373,9 +407,9 @@ void Scene::playSoundLeft()
 
 void Scene::playSoundFront()
 {
-    int cellValue = m_labyrinthe[position[0]][position[1]];
+    int cellValue = m_Maze->m_Matrix[m_Position[0]][m_Position[1]];
 
-    switch (direction)
+    switch (m_Direction)
     {
     case NORTH:
         if ((cellValue & NORTH) == 0)
@@ -409,9 +443,9 @@ void Scene::playSoundFront()
 
 void Scene::playSoundRight()
 {
-    int cellValue = m_labyrinthe[position[0]][position[1]];
+    int cellValue = m_Maze->m_Matrix[m_Position[0]][m_Position[1]];
 
-    switch (direction)
+    switch (m_Direction)
     {
     case NORTH:
         if ((cellValue & EAST) == 0)
@@ -468,34 +502,35 @@ void Scene::onDrawFrame()
         // centre des rotations
         mat4::translate(m_MatV, m_MatV, m_Center);
 
-        /** dessin de l'image **/
-        for (size_t row = 0; row < m_Maze->m_Width; row++)
+        // Dessine le labyrinthe
+        for (size_t row = 0; row < m_Maze->m_Height; row++)
         {
-            for (size_t col = 0; col < m_Maze->m_Height; col++)
+            for (size_t col = 0; col < m_Maze->m_Width; col++)
             {
                 m_Cube[row][col]->onRender(m_MatP, m_MatV);
                 mat4::translate(m_MatV, m_MatV, vec3::fromValues(1, 0, 0));
             }
-            mat4::translate(m_MatV, m_MatV, vec3::fromValues(-5.0, 0, 1));
+
+            mat4::translate(m_MatV, m_MatV, vec3::fromValues(0. - (m_Maze->m_Width), 0, 1));
         }
     }
 }
 
 void Scene::rotateLeft()
 {
-    switch (this->direction)
+    switch (m_Direction)
     {
     case NORTH:
-        direction = WEST;
+        m_Direction = WEST;
         break;
     case SOUTH:
-        direction = EAST;
+        m_Direction = EAST;
         break;
     case EAST:
-        direction = NORTH;
+        m_Direction = NORTH;
         break;
     case WEST:
-        direction = SOUTH;
+        m_Direction = SOUTH;
         break;
 
     default:
@@ -505,19 +540,19 @@ void Scene::rotateLeft()
 
 void Scene::rotateRight()
 {
-    switch (direction)
+    switch (m_Direction)
     {
     case NORTH:
-        direction = EAST;
+        m_Direction = EAST;
         break;
     case SOUTH:
-        direction = WEST;
+        m_Direction = WEST;
         break;
     case EAST:
-        direction = SOUTH;
+        m_Direction = SOUTH;
         break;
     case WEST:
-        direction = NORTH;
+        m_Direction = NORTH;
         break;
 
     default:
@@ -525,34 +560,43 @@ void Scene::rotateRight()
     }
 }
 
-bool Scene::canMove()
+bool Scene::stepForward()
 {
-    int x = this->position[0];
-    int y = this->position[1];
+    int x = m_Position[0];
+    int y = m_Position[1];
 
-    int cellValue = this->m_labyrinthe[x][y];
+    int cellValue = m_Maze->m_Matrix[x][y];
+    bool canMove = false;
 
-    if (this->direction == NORTH && (cellValue & NORTH) != 0)
+    if (m_Direction == NORTH && (cellValue & NORTH) != 0)
     {
-        this->position[0] = x - 1;
-        return true;
+        m_Position[0] = x - 1;
+        canMove = true;
     }
-    if (this->direction == SOUTH && (cellValue & SOUTH) != 0)
+    if (m_Direction == SOUTH && (cellValue & SOUTH) != 0)
     {
-        this->position[0] = x + 1;
-        return true;
+        m_Position[0] = x + 1;
+        canMove = true;
     }
-    if (this->direction == EAST && (cellValue & EAST) != 0)
+    if (m_Direction == EAST && (cellValue & EAST) != 0)
     {
-        this->position[1] = y + 1;
-        return true;
+        m_Position[1] = y + 1;
+        canMove = true;
     }
-    if (this->direction == WEST && (cellValue & WEST) != 0)
+    if (m_Direction == WEST && (cellValue & WEST) != 0)
     {
-        this->position[1] = y - 1;
-        return true;
+        m_Position[1] = y - 1;
+        canMove = true;
     }
-    return false;
+
+    if (m_Position[0] == (m_Maze->m_Height - 1) && m_Position[1] == (m_Maze->m_Width - 1))
+    {
+        std::cout << std::endl;
+        std::cout << "Bravo, vous avez trouvé la sortie !" << std::endl;
+        exit(0);
+    }
+
+    return canMove;
 }
 
 /** supprime tous les objets de cette scène */
