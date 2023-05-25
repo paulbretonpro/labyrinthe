@@ -21,9 +21,11 @@ make install
 
 - Pour lancer le projet, il suffit d'exécuter la commande suivante à la racine du projet :
 ```bash
-make run
+./main [maze_file='maze/maze.num']
 ```
-Cette commande ouvre une fenêtre de jeu où vous pouvez commencer à jouer.
+Cette commande ouvre une fenêtre de jeu où vous pouvez commencer à jouer, en prenant un paramètre optionnel le chemin du fichier labyrinthe. Si aucun fichier n'est fourni, le programme cherche le fichier de chemin `maze/maze.num` Un labyrinthe par défaut est fourni avec le projet.
+
+Le dossier `maze` contient son propre `Makefile` pour compiler le générateur de labyrinthe (`make`). Vous pouvez créer des fichiers de labyrinthe en exécutant `./mazer [width=10] [height=10] [weight=2] [seed=time()]` avec comme paramètres `width` (largeur), `height` (hauteur), `weight` (poids pour la génération des murs) et `seed` (graine).
 
 ## Le jeu
 
